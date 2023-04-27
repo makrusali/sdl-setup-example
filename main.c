@@ -14,7 +14,7 @@ i32 main(i32 argc, i8 **argv)
     // init SDL video
     if (SDL_Init(SDL_INIT_VIDEO))
     {
-        SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Init SDL Error : %s", SDL_GetError());
+        SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Init SDL Error : %s\n", SDL_GetError());
         return -1;
     }
 
@@ -28,14 +28,14 @@ i32 main(i32 argc, i8 **argv)
     Window = SDL_CreateWindow(Title, PosX, PosY, WindowWidth, WindowHeight, WindowFlags);
     if (Window == NULL)
     {
-        SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Create Window Failed : %s", SDL_GetError());
+        SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Create Window Failed : %s\n", SDL_GetError());
         return -1;
     }
 
     Renderer = SDL_CreateRenderer(Window, -1, SDL_RENDERER_ACCELERATED);
     if (Renderer == NULL)
     {
-        SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Create Renderer Failed : %s", SDL_GetError());
+        SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Create Renderer Failed : %s\n", SDL_GetError());
         return -1;
     }
 

@@ -89,7 +89,7 @@ static bool IsTileMapPoint(const u8 *TileMap, i32 TestX, i32 TestY)
         // check
         if (TileMap[TestTileX + (TestTileY * 24)] != 0)
         {
-            SDL_Log("printf tile x : %d - tile y : %d\n", TestTileX, TestTileY);
+            // SDL_Log("printf tile x : %d - tile y : %d\n", TestTileX, TestTileY);
             Result = true;
         }
     }
@@ -122,7 +122,7 @@ static bool Player_CheckCollision(const u8 *TileMap, const Player_t *Player, i32
         // TODO (makrusali) : Minus 1 Bug
         IsTileMapPoint(TileMap, PlayerTileX + (Player->Width / 2) - 1, PlayerTileY))
     {
-        SDL_Log("collision\n");
+        // SDL_Log("collision\n");
         return true;
     }
 
@@ -262,7 +262,7 @@ i32 main(i32 argc, i8 **argv)
 
     while (IsRunning)
     {
-        const u32 StartTime = SDL_GetTicks();
+        const u32 StartMsTicks = SDL_GetTicks();
         
         while (SDL_PollEvent(&Event))
         {
@@ -319,8 +319,8 @@ i32 main(i32 argc, i8 **argv)
 
         SDL_RenderPresent(Renderer);
 
-        const u32 EndTime = SDL_GetTicks();
-        const u32 ElapsedTime = EndTime - StartTime;
+        const u32 EndMsTicks = SDL_GetTicks();
+        const u32 ElapsedTime = EndMsTicks - StartMsTicks;
 
         if (IsRunning)
         {

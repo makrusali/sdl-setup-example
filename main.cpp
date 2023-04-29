@@ -5,6 +5,7 @@
 #define WINDOW_WIDTH 576
 #define WINDOW_HEIGHT 576
 
+
 const u8 TileMap[24 * 24] = {
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
     1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
@@ -195,7 +196,6 @@ i32 main(i32 argc, i8 **argv)
 
     SDL_Window *Window;
     SDL_Renderer *Renderer;
-    SDL_Event Event;
 
     // init SDL video
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER))
@@ -205,8 +205,8 @@ i32 main(i32 argc, i8 **argv)
     }
 
     const char *Title = "SDL WINDOW";
-    i32 PosX = SDL_WINDOWPOS_CENTERED;
-    i32 PosY = SDL_WINDOWPOS_CENTERED;
+    i32 PosX = SDL_WINDOWPOS_UNDEFINED;
+    i32 PosY = SDL_WINDOWPOS_UNDEFINED;
     i32 WindowFlags = SDL_WINDOW_SHOWN;
 
     Window = SDL_CreateWindow(Title, PosX, PosY, WINDOW_WIDTH, WINDOW_HEIGHT, WindowFlags);
@@ -242,8 +242,8 @@ i32 main(i32 argc, i8 **argv)
 
     // Load Player Texture
     Player_t *Player = Player_Create(24, 24);
-    Player->X = 25;
-    Player->Y = 25;
+    Player->X = 24;
+    Player->Y = 48;
     if (Player == NULL)
     {
         SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Create Player Failed : %s\n");
@@ -253,17 +253,22 @@ i32 main(i32 argc, i8 **argv)
     // FPS TARGETING
     // TODO (makrusali) : Learn more about it
     // check and refactor to the better implementation
-    const u32 TargetFPS = 30;
-    const f32 TargetMillisecondPerFrame = 1000 / TargetFPS;
-    u32 FPSCount = 0;
-    u32 LastTicks = 0;
+    const u64 TargetFPS = 30;
+    const f64 TargetMillisecondPerFrame = 1000 / TargetFPS;
+    u64 FPSCount = 0;
+    u64 LastTicks = 0;
 
     LastTicks = SDL_GetTicks();
 
+    u64 StartMsTicks = 0;
+    u64 EndMsTicks = 0;
+    u64 ElapsedTime = 0;
+
     while (IsRunning)
     {
-        const u32 StartMsTicks = SDL_GetTicks();
-        
+        u64 StartMsTicks = SDL_GetTicks();
+        SDL_Event Event;
+
         while (SDL_PollEvent(&Event))
         {
             switch (Event.type)
@@ -271,14 +276,14 @@ i32 main(i32 argc, i8 **argv)
             case SDL_QUIT:
                 IsRunning = false;
                 break;
-            case SDL_KEYDOWN:
-                // if you want to get key symbol
-                // char key = Event.key.keysym.sym;
-                break;
-            case SDL_KEYUP:
-                // if you want to get key symbol
-                // char key = Event.key.keysym.sym;
-                break;
+            // case SDL_KEYDOWN:
+            // if you want to get key symbol
+            // char key = Event.key.keysym.sym;
+            // break;
+            // case SDL_KEYUP:
+            // if you want to get key symbol
+            // char key = Event.key.keysym.sym;
+            // break;
             default:
                 break;
             }
@@ -287,21 +292,22 @@ i32 main(i32 argc, i8 **argv)
         // if you want to scan key
         // scan event
         const u8 *state = SDL_GetKeyboardState(NULL);
+
         if (state[SDL_SCANCODE_RIGHT])
         {
-            Player_Move(Player, 8, 0);
+            Player_Move(Player, 4, 0);
         }
         else if (state[SDL_SCANCODE_LEFT])
         {
-            Player_Move(Player, -8, 0);
+            Player_Move(Player, -4, 0);
         }
         else if (state[SDL_SCANCODE_UP])
         {
-            Player_Move(Player, 0, -8);
+            Player_Move(Player, 0, -4);
         }
         else if (state[SDL_SCANCODE_DOWN])
         {
-            Player_Move(Player, 0, 8);
+            Player_Move(Player, 0, 4);
         }
 
         // Render
@@ -319,8 +325,8 @@ i32 main(i32 argc, i8 **argv)
 
         SDL_RenderPresent(Renderer);
 
-        const u32 EndMsTicks = SDL_GetTicks();
-        const u32 ElapsedTime = EndMsTicks - StartMsTicks;
+        EndMsTicks = SDL_GetTicks();
+        ElapsedTime = EndMsTicks - StartMsTicks;
 
         if (IsRunning)
         {
@@ -329,21 +335,22 @@ i32 main(i32 argc, i8 **argv)
         }
 
         // check every one seconds
-        if (SDL_GetTicks() - LastTicks  >= 1000)
+        if (SDL_GetTicks() - LastTicks >= 1000)
         {
             // TODO (makrusali) : Maybe logging in game window is than better
             LastTicks = SDL_GetTicks();
             SDL_Log("FPS : %d\n", FPSCount);
             FPSCount = 0;
         }
+        SDL_Log("PIF FPS : %d\n", FPSCount);
     }
 
-    SDL_Delay(500);
+    Player_Free(Player);
 
     // destroy all instance
     SDL_DestroyRenderer(Renderer);
     SDL_DestroyWindow(Window);
-    Player_Free(Player);
+
     SDL_Quit();
 
     return 0;

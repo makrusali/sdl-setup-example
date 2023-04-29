@@ -73,22 +73,23 @@ static void DrawPlayer(SDL_Renderer *Renderer, const Player_t *Player)
     SDL_RenderFillRect(Renderer, &Rect);
 }
 
-static bool IsTileMapPoint(const u8 *TileMap, const Player_t *Player, i32 TestX, i32 TestY)
+static bool IsTileMapPoint(const u8 *TileMap, i32 TestX, i32 TestY)
 {
     const i32 MAX_TILE_COUNT_ROW = 24;
     const i32 MAX_TILE_COUNT_COL = 24;
 
     bool Result = false;
 
-    i32 PlayerTileX = TestX + (Player->Width / 2) / 24;
-    i32 PlayerTileY = TestY + (Player->Height) / 24;
+    i32 TestTileX = TestX / 24;
+    i32 TestTileY = TestY / 24;
 
     // Check bound
-    if ((PlayerTileX >= 0 && PlayerTileX < MAX_TILE_COUNT_COL) && (PlayerTileY >= 0 && PlayerTileY < MAX_TILE_COUNT_ROW))
+    if ((TestTileX >= 0 && TestTileX < MAX_TILE_COUNT_COL) && (TestTileY >= 0 && TestTileY < MAX_TILE_COUNT_ROW))
     {
         // check
-        if (TileMap[PlayerTileX + (PlayerTileY * 24)] != 0)
+        if (TileMap[TestTileX + (TestTileY * 24)] != 0)
         {
+            SDL_Log("printf tile x : %d - tile y : %d\n", TestTileX, TestTileY);
             Result = true;
         }
     }
@@ -102,38 +103,30 @@ static bool Player_CheckCollision(const u8 *TileMap, const Player_t *Player, i32
     i32 NewX = Player->X + dX;
     i32 NewY = Player->Y + dY;
 
-    // TODO (makrusali) : Refactor for better structure
-    i32 BottomMidPlayerPosX = NewX + (Player->Width / 2);
-    i32 BottomMidPlayerPosY = NewY + (Player->Height);
+    i32 PlayerTileX = NewX + (Player->Width / 2);
+    i32 PlayerTileY = NewY + Player->Height;
 
-    // Get The Player Pixel Pos and Index The Array Tile Map to check the tile
-    i32 PlayerTileX = BottomMidPlayerPosX / 24;
-    i32 PlayerTileY = BottomMidPlayerPosY / 24;
-
-    bool IsTiled = false;
-
-    const i32 MAX_TILE_COUNT_ROW = 24;
-    const i32 MAX_TILE_COUNT_COL = 24;
-
-    // Check bound
-    if ((PlayerTileX >= 0 && PlayerTileX < MAX_TILE_COUNT_COL) && (PlayerTileY >= 0 && PlayerTileY < MAX_TILE_COUNT_ROW))
+    // three checking point
+    /**
+     * a, b, c
+     * +----------------+
+     * |                |
+     * |                |
+     * |                |
+     * a-------b--------c
+     */
+    
+    // TODO (makrusali) : Debug This Function
+    if (IsTileMapPoint(TileMap, PlayerTileX - (Player->Width / 2), PlayerTileY) ||
+        IsTileMapPoint(TileMap, PlayerTileX, PlayerTileY) ||
+        // TODO (makrusali) : Minus 1 Bug
+        IsTileMapPoint(TileMap, PlayerTileX + (Player->Width / 2) - 1, PlayerTileY))
     {
-        // check
-        if (TileMap[PlayerTileX + (PlayerTileY * 24)] != 0)
-        {
-            IsTiled = true;
-        }
+        SDL_Log("collision\n");
+        return true;
     }
 
-    SDL_Log("Mid Pos Player X : %d - Y : %d\n", BottomMidPlayerPosX % 24, BottomMidPlayerPosY % 24);
-    SDL_Log("NewX : %d - NewY : %d\n", NewX, NewY);
-
-    if (IsTiled)
-    {
-        SDL_Log("Is Tiled \n");
-    }
-
-    return IsTiled;
+    return false;
 }
 
 static void Player_Move(Player_t *Player, i32 dX, i32 dY)

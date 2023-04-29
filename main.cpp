@@ -2,20 +2,6 @@
 #include <stdio.h>
 #include "typedef.h"
 
-typedef struct
-{
-    f16 X;
-    f16 Y;
-} Vec2_t;
-
-typedef struct
-{
-    char *Name;
-    int Health;
-    int Damage;
-    Vec2_t Vec;
-} Player_t;
-
 #define WINDOW_WIDTH 576
 #define WINDOW_HEIGHT 576
 
@@ -48,7 +34,118 @@ const u8 TileMap[24 * 24] = {
 static SDL_Surface *TileMapTextureSurface;
 static SDL_Texture *TileMapTexture;
 
-void DrawTileMap(SDL_Renderer *Renderer, const u8 *TileMap)
+typedef struct
+{
+    i32 Width;
+    i32 Height;
+    i32 X;
+    i32 Y;
+
+    SDL_Texture *Texture;
+} Player_t;
+
+static Player_t *Player_Create(const i32 Width, const i32 Height)
+{
+    Player_t *Player = (Player_t *)malloc(sizeof(Player_t));
+
+    Player->X = 0;
+    Player->Y = 0;
+    Player->Height = Height;
+    Player->Width = Width;
+
+    return Player;
+}
+
+static void Player_Free(Player_t *Player)
+{
+    free(Player);
+}
+
+static void DrawPlayer(SDL_Renderer *Renderer, const Player_t *Player)
+{
+    SDL_Rect Rect = {Player->X, Player->Y, Player->Width, Player->Height};
+    i32 ColorRed = 255;
+    i32 ColorGreen = 0;
+    i32 ColorBlue = 0;
+    i32 Alpha = 255;
+    // set render color to white
+    SDL_SetRenderDrawColor(Renderer, ColorRed, ColorGreen, ColorBlue, Alpha);
+    SDL_RenderFillRect(Renderer, &Rect);
+}
+
+static bool IsTileMapPoint(const u8 *TileMap, const Player_t *Player, i32 TestX, i32 TestY)
+{
+    const i32 MAX_TILE_COUNT_ROW = 24;
+    const i32 MAX_TILE_COUNT_COL = 24;
+
+    bool Result = false;
+
+    i32 PlayerTileX = TestX + (Player->Width / 2) / 24;
+    i32 PlayerTileY = TestY + (Player->Height) / 24;
+
+    // Check bound
+    if ((PlayerTileX >= 0 && PlayerTileX < MAX_TILE_COUNT_COL) && (PlayerTileY >= 0 && PlayerTileY < MAX_TILE_COUNT_ROW))
+    {
+        // check
+        if (TileMap[PlayerTileX + (PlayerTileY * 24)] != 0)
+        {
+            Result = true;
+        }
+    }
+
+    return Result;
+}
+
+// Basic checking Collision between Player and tile map
+static bool Player_CheckCollision(const u8 *TileMap, const Player_t *Player, i32 dX, i32 dY)
+{
+    i32 NewX = Player->X + dX;
+    i32 NewY = Player->Y + dY;
+
+    // TODO (makrusali) : Refactor for better structure
+    i32 BottomMidPlayerPosX = NewX + (Player->Width / 2);
+    i32 BottomMidPlayerPosY = NewY + (Player->Height);
+
+    // Get The Player Pixel Pos and Index The Array Tile Map to check the tile
+    i32 PlayerTileX = BottomMidPlayerPosX / 24;
+    i32 PlayerTileY = BottomMidPlayerPosY / 24;
+
+    bool IsTiled = false;
+
+    const i32 MAX_TILE_COUNT_ROW = 24;
+    const i32 MAX_TILE_COUNT_COL = 24;
+
+    // Check bound
+    if ((PlayerTileX >= 0 && PlayerTileX < MAX_TILE_COUNT_COL) && (PlayerTileY >= 0 && PlayerTileY < MAX_TILE_COUNT_ROW))
+    {
+        // check
+        if (TileMap[PlayerTileX + (PlayerTileY * 24)] != 0)
+        {
+            IsTiled = true;
+        }
+    }
+
+    SDL_Log("Mid Pos Player X : %d - Y : %d\n", BottomMidPlayerPosX % 24, BottomMidPlayerPosY % 24);
+    SDL_Log("NewX : %d - NewY : %d\n", NewX, NewY);
+
+    if (IsTiled)
+    {
+        SDL_Log("Is Tiled \n");
+    }
+
+    return IsTiled;
+}
+
+static void Player_Move(Player_t *Player, i32 dX, i32 dY)
+{
+    if (!Player_CheckCollision(TileMap, Player, dX, dY))
+    {
+        Player->X += dX;
+        Player->Y += dY;
+    }
+}
+
+static void DrawTileMap(SDL_Renderer *Renderer, const u8 *TileMap)
 {
     SDL_Rect SourceRectangle = {0, 0, 24, 24};
     SDL_Rect DestinationRect = {0, 0, 24, 24};
@@ -81,7 +178,7 @@ void DrawTileMap(SDL_Renderer *Renderer, const u8 *TileMap)
             SourceRectangle.x = 24;
             SourceRectangle.y = 24;
             break;
-         case 5:
+        case 5:
             SourceRectangle.x = 48;
             SourceRectangle.y = 24;
             break;
@@ -97,8 +194,6 @@ void DrawTileMap(SDL_Renderer *Renderer, const u8 *TileMap)
             printf("Render Result : %s\n", SDL_GetError());
         }
     }
-
-    SDL_RenderPresent(Renderer);
 }
 
 i32 main(i32 argc, i8 **argv)
@@ -143,14 +238,24 @@ i32 main(i32 argc, i8 **argv)
         exit(-1);
     }
 
+    // Load Tile Map Texture
     TileMapTexture = SDL_CreateTextureFromSurface(Renderer, TileMapTextureSurface);
     if (TileMapTexture == NULL)
     {
         SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Create Texture Failed : %s\n", SDL_GetError());
         exit(-1);
     }
-
     SDL_FreeSurface(TileMapTextureSurface);
+
+    // Load Player Texture
+    Player_t *Player = Player_Create(24, 24);
+    Player->X = 25;
+    Player->Y = 25;
+    if (Player == NULL)
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Create Player Failed : %s\n");
+        exit(-1);
+    }
 
     while (IsRunning)
     {
@@ -176,23 +281,23 @@ i32 main(i32 argc, i8 **argv)
 
         // if you want to scan key
         // scan event
-        // const u8 *state = SDL_GetKeyboardState(NULL);
-        // if (state[SDL_SCANCODE_RIGHT])
-        // {
-        //     GameContext->GameState->Man.X += 10;
-        // }
-        // else if (state[SDL_SCANCODE_LEFT])
-        // {
-        //     GameContext->GameState->Man.X -= 10;
-        // }
-        // else if (state[SDL_SCANCODE_UP])
-        // {
-        //     GameContext->GameState->Man.Y -= 10;
-        // }
-        // else if (state[SDL_SCANCODE_DOWN])
-        // {
-        //     GameContext->GameState->Man.Y += 10;
-        // }
+        const u8 *state = SDL_GetKeyboardState(NULL);
+        if (state[SDL_SCANCODE_RIGHT])
+        {
+            Player_Move(Player, 1, 0);
+        }
+        else if (state[SDL_SCANCODE_LEFT])
+        {
+            Player_Move(Player, -1, 0);
+        }
+        else if (state[SDL_SCANCODE_UP])
+        {
+            Player_Move(Player, 0, -1);
+        }
+        else if (state[SDL_SCANCODE_DOWN])
+        {
+            Player_Move(Player, 0, 1);
+        }
 
         // Render
         // clear render *for clearing screen
@@ -205,6 +310,9 @@ i32 main(i32 argc, i8 **argv)
         SDL_RenderClear(Renderer);
 
         DrawTileMap(Renderer, TileMap);
+        DrawPlayer(Renderer, Player);
+
+        SDL_RenderPresent(Renderer);
 
         // delay
         SDL_Delay(10);

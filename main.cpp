@@ -313,6 +313,8 @@ i32 main(i32 argc, i8 **argv)
 
     SDL_Delay(500);
 
+    Player_Free(Player);
+
     // destroy all instance
     SDL_DestroyRenderer(Renderer);
     SDL_DestroyWindow(Window);

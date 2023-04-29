@@ -6,6 +6,10 @@
 
 typedef float f16;
 typedef double f32;
+typedef long double f64;
+
+typedef unsigned long int u64;
+typedef long int i64;
 
 typedef unsigned int u32;
 typedef int i32;

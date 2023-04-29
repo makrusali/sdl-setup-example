@@ -115,7 +115,7 @@ static bool Player_CheckCollision(const u8 *TileMap, const Player_t *Player, i32
      * |                |
      * a-------b--------c
      */
-    
+
     // TODO (makrusali) : Debug This Function
     if (IsTileMapPoint(TileMap, PlayerTileX - (Player->Width / 2), PlayerTileY) ||
         IsTileMapPoint(TileMap, PlayerTileX, PlayerTileY) ||
@@ -198,7 +198,7 @@ i32 main(i32 argc, i8 **argv)
     SDL_Event Event;
 
     // init SDL video
-    if (SDL_Init(SDL_INIT_VIDEO))
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER))
     {
         SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Init SDL Error : %s\n", SDL_GetError());
         exit(-1);
@@ -250,8 +250,20 @@ i32 main(i32 argc, i8 **argv)
         exit(-1);
     }
 
+    // FPS TARGETING
+    // TODO (makrusali) : Learn more about it
+    // check and refactor to the better implementation
+    const u32 TargetFPS = 30;
+    const f32 TargetMillisecondPerFrame = 1000 / TargetFPS;
+    u32 FPSCount = 0;
+    u32 LastTicks = 0;
+
+    LastTicks = SDL_GetTicks();
+
     while (IsRunning)
     {
+        const u32 StartTime = SDL_GetTicks();
+        
         while (SDL_PollEvent(&Event))
         {
             switch (Event.type)
@@ -277,19 +289,19 @@ i32 main(i32 argc, i8 **argv)
         const u8 *state = SDL_GetKeyboardState(NULL);
         if (state[SDL_SCANCODE_RIGHT])
         {
-            Player_Move(Player, 1, 0);
+            Player_Move(Player, 8, 0);
         }
         else if (state[SDL_SCANCODE_LEFT])
         {
-            Player_Move(Player, -1, 0);
+            Player_Move(Player, -8, 0);
         }
         else if (state[SDL_SCANCODE_UP])
         {
-            Player_Move(Player, 0, -1);
+            Player_Move(Player, 0, -8);
         }
         else if (state[SDL_SCANCODE_DOWN])
         {
-            Player_Move(Player, 0, 1);
+            Player_Move(Player, 0, 8);
         }
 
         // Render
@@ -307,17 +319,31 @@ i32 main(i32 argc, i8 **argv)
 
         SDL_RenderPresent(Renderer);
 
-        // delay
-        SDL_Delay(10);
+        const u32 EndTime = SDL_GetTicks();
+        const u32 ElapsedTime = EndTime - StartTime;
+
+        if (IsRunning)
+        {
+            SDL_Delay(TargetMillisecondPerFrame - ElapsedTime);
+            FPSCount++;
+        }
+
+        // check every one seconds
+        if (SDL_GetTicks() - LastTicks  >= 1000)
+        {
+            // TODO (makrusali) : Maybe logging in game window is than better
+            LastTicks = SDL_GetTicks();
+            SDL_Log("FPS : %d\n", FPSCount);
+            FPSCount = 0;
+        }
     }
 
     SDL_Delay(500);
 
-    Player_Free(Player);
-
     // destroy all instance
     SDL_DestroyRenderer(Renderer);
     SDL_DestroyWindow(Window);
+    Player_Free(Player);
     SDL_Quit();
 
     return 0;
